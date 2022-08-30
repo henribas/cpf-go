@@ -10,12 +10,14 @@ type CPF interface {
 	Numero() string
 	Formatar(numero string) string
 	RemoverFormatacao(numero string) string
-	Valido(numero string) bool
+	Valido() bool
 }
 
 type CPFDidatico struct {
 	NumeroCPF string
 }
+
+var _ CPF = CPFDidatico{} // Assegura a implementação da interface.
 
 func (c CPFDidatico) Numero() string {
 	return c.NumeroCPF
@@ -35,20 +37,20 @@ func (c CPFDidatico) RemoverFormatacao(numero string) string {
 	return regexp.ReplaceAllString(c.NumeroCPF, "")
 }
 
-func (c CPFDidatico) Valido(numero string) bool {
-	if !informouNumero(numero) {
+func (c CPFDidatico) Valido() bool {
+	if !informouNumero(c.Numero()) {
 		return false
 	}
 
-	if !estaNoPadrao(numero) {
+	if !estaNoPadrao(c.Numero()) {
 		return false
 	}
 
-	if numeroInvalido(numero) {
+	if numeroInvalido(c.Numero()) {
 		return false
 	}
 
-	return osDigitosVerificadoresSaoIguais(numeros(numero))
+	return osDigitosVerificadoresSaoIguais(numeros(c.Numero()))
 }
 
 func informouNumero(numero string) bool {
@@ -67,21 +69,11 @@ func estaNoPadrao(numero string) bool {
 
 func numeroInvalido(numero string) bool {
 	numeroSemFormatacao := CPFDidatico{}.RemoverFormatacao(numero)
-
-	if numeroSemFormatacao == "00000000000" ||
-		numeroSemFormatacao == "11111111111" ||
-		numeroSemFormatacao == "22222222222" ||
-		numeroSemFormatacao == "33333333333" ||
-		numeroSemFormatacao == "44444444444" ||
-		numeroSemFormatacao == "55555555555" ||
-		numeroSemFormatacao == "66666666666" ||
-		numeroSemFormatacao == "77777777777" ||
-		numeroSemFormatacao == "88888888888" ||
-		numeroSemFormatacao == "99999999999" {
-
-		return (true)
+	for i := 0; i < 10; i++ {
+		if numeroSemFormatacao == strings.Repeat(strconv.Itoa(i), 9) {
+			return true
+		}
 	}
-
 	return false
 }
 
@@ -97,11 +89,11 @@ func numeros(numero string) [11]int {
 }
 
 func calcularPrimeiroDigitoVerificador(numeros [11]int) int {
-	multiplicadoresCPFSemDigitoVerificador := [9]int{10, 9, 8, 7, 6, 5, 4, 3, 2}
+
 	var resultadoMultiplicacaoCPFSemDigitoVerificador [9]int
 
 	for i := 0; i < 9; i++ {
-		resultadoMultiplicacaoCPFSemDigitoVerificador[i] = numeros[i] * multiplicadoresCPFSemDigitoVerificador[i]
+		resultadoMultiplicacaoCPFSemDigitoVerificador[i] = numeros[i] * (10 - i)
 	}
 
 	somaMultiplicacao := 0
